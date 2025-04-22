@@ -1,7 +1,9 @@
 from rest_framework.routers import DefaultRouter
-from apiapp.views import TaskViewSet
+from apiapp.views import TaskViewSet, user_signup
+from django.urls import path
 
 router = DefaultRouter()
 router.register(r'tasks', TaskViewSet, basename='task')
-
-urlpatterns = router.urls
+urlpatterns = [
+    path('user-signup/', user_signup, name='user-signup'),
+] + router.urls

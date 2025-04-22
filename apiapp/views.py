@@ -2,8 +2,9 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from .models import Task
 from apiapp.serializers import TaskSerializer
-from rest_framework.decorators import action
 from apiapp.validators import validate_uuid
+from rest_framework.decorators import api_view
+from django.contrib.auth import get_user_model
 
 from django.core.validators import RegexValidator
 
@@ -18,7 +19,7 @@ class TaskViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        task = self.queryset.filter(task_id=pk).first()
+        task = self.get_queryset().filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
         serializer = TaskSerializer(task)
@@ -39,9 +40,9 @@ class TaskViewSet(viewsets.ViewSet):
 
     def create(self, request):
         task_id = request.data.pop('task_id', None)
-
         if task_id and validate_uuid(task_id):
             return self._fork_task(task_id)
+
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
             task = serializer.save()
@@ -49,7 +50,7 @@ class TaskViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=400)
 
     def update(self, request, pk=None):
-        task = self.queryset.filter(task_id=pk).first()
+        task = self.get_queryset().filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
         serializer = TaskSerializer(task, data=request.data, partial=True)
@@ -59,8 +60,36 @@ class TaskViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=400)
 
     def destroy(self, request, pk=None):
-        task = self.queryset.filter(task_id=pk).first()
+        task = self.get_queryset().filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
         task.delete()
         return Response({'message': f'Task {pk} deleted successfully'}, status=204)
+
+
+@api_view(['POST'])
+def user_signup(request):
+    """
+    User signup view.
+    """
+    username = request.data.get('username')
+    password = request.data.get('password')
+    email = request.data.get('email')
+
+    if not username or not password or not email:
+        return Response({'error': 'Username, password, and email are required.'}, status=400)
+
+    # Check if user already exists
+    user = get_user_model().objects.filter(username=username).first()
+    if user:
+        return Response({'error': 'User already exists.'}, status=400)
+
+    # Create new user
+    user = get_user_model().objects.create(
+        username=username,
+        email=email,
+    )
+    user.set_password(password)
+    user.save()
+
+    return Response({'message': 'User created successfully.'}, status=201)
