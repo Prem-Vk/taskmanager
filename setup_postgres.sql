@@ -1,0 +1,3 @@
+CREATE USER taskmanager WITH ENCRYPTED PASSWORD 'taskmanager';
+ALTER USER taskmanager CREATEDB;
+CREATE DATABASE taskmanager WITH ENCODING 'UTF8' OWNER taskmanager;
