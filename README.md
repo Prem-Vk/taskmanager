@@ -90,8 +90,10 @@ CLI tool with a loop until user exits manually to test api without using complex
 #### To run interactive mode run `python client.py run_api --access-token <access-token>`
 
 1. To create and get task details
-   <img width="1440" alt="image" src="https://github.com/user-attachments/assets/ee7885b7-f2ac-4055-b858-c4898caa9724" />
+    <img width="1440" alt="image" src="https://github.com/user-attachments/assets/ee7885b7-f2ac-4055-b858-c4898caa9724" />
 2. Update and deletion of task:
- <img width="1440" alt="image" src="https://github.com/user-attachments/assets/68a30cb1-1722-456e-a65c-d71ac4f08562" />
+    img width="1440" alt="image" src="https://github.com/user-attachments/assets/68a30cb1-1722-456e-a65c-d71ac4f08562" />
 
-   
+---
+# Thank You
+---
