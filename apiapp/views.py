@@ -6,17 +6,21 @@ from apiapp.validators import validate_uuid
 from rest_framework.decorators import api_view
 from django.contrib.auth import get_user_model
 from apiapp.tasks import run_task
-from apiapp.helpers import validate_updation_status, TASK_STATUS_MAP, DEFAULT_TASK_RUNTIME
+from apiapp.helpers import validate_updation_status, DEFAULT_TASK_RUNTIME
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from django.core.validators import RegexValidator
 
 class TaskViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Task.objects.all()
 
     def list(self, request):
         queryset = self.get_queryset().order_by('created_at')
+        print("YAHA TAK AAYA")
         serializer = TaskViewSerializer(queryset, many=True)
         return Response(serializer.data)
 
