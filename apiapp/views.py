@@ -1,10 +1,12 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from .models import Task
-from apiapp.serializers import TaskSerializer
+from apiapp.serializers import TaskSerializer, TaskViewSerializer, TaskUpdateSerializer, TaskViewInDetailSerializer
 from apiapp.validators import validate_uuid
 from rest_framework.decorators import api_view
 from django.contrib.auth import get_user_model
+from apiapp.tasks import run_task
+from apiapp.helpers import validate_updation_status, TASK_STATUS_MAP, DEFAULT_TASK_RUNTIME
 
 from django.core.validators import RegexValidator
 
@@ -15,14 +17,14 @@ class TaskViewSet(viewsets.ViewSet):
 
     def list(self, request):
         queryset = self.get_queryset().order_by('created_at')
-        serializer = TaskSerializer(queryset, many=True)
+        serializer = TaskViewSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
         task = self.get_queryset().filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
-        serializer = TaskSerializer(task)
+        serializer = TaskViewInDetailSerializer(task)
         return Response(serializer.data)
 
     def _fork_task(self, task_id):
@@ -38,26 +40,38 @@ class TaskViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(new_task.errors, status=400)
 
+    def _run_task(self, task: Task, timer: int = DEFAULT_TASK_RUNTIME):
+        if task.status == Task.TaskStatus.RUNNING:
+            # If the task is running, start the task
+            run_task.delay(task.task_id, timer)
+
     def create(self, request):
-        task_id = request.data.pop('task_id', None)
+        task_id = request.data.pop('fork_task_id', None)
         if task_id and validate_uuid(task_id):
             return self._fork_task(task_id)
 
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
             task = serializer.save()
-            return Response(TaskSerializer(task).data, status=201)
+            self._run_task(task, request.data.get('timer', DEFAULT_TASK_RUNTIME))
+            return Response({'message': 'Task created successfully'}, status=201)
         return Response(serializer.errors, status=400)
 
     def update(self, request, pk=None):
         task = self.get_queryset().filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
-        serializer = TaskSerializer(task, data=request.data, partial=True)
-        if serializer.is_valid():
-            task = serializer.save()
-            return Response(TaskSerializer(task).data, status=200)
-        return Response(serializer.errors, status=400)
+
+        if 'status' in request.data:
+            if validate_updation_status(request.data['status']) is False:
+                return Response({'error': 'Invalid status value'}, status=400)
+
+            serializer = TaskSerializer(task, data=request.data, partial=True)
+            if serializer.is_valid():
+                task = serializer.save()
+                self._run_task(task, request.data.get('timer', DEFAULT_TASK_RUNTIME))
+                return Response({'message': 'Task updated successfully'}, status=200)
+            return Response(serializer.errors, status=400)
 
     def destroy(self, request, pk=None):
         task = self.get_queryset().filter(task_id=pk).first()
