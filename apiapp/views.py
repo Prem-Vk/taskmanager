@@ -20,21 +20,22 @@ class TaskViewSet(viewsets.ViewSet):
         return Task.objects.all()
 
     def list(self, request):
-        queryset = self.get_queryset().order_by('created_at')
+        queryset = self.get_queryset().filter(user=request.user).order_by('created_at')
+        print(request.user)
         serializer = TaskViewSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
         if not (pk and validate_uuid(pk)):
             return Response({'error': 'Invalid task ID'}, status=400)
-        task = self.get_queryset().filter(task_id=pk).first()
+        task = self.get_queryset().filter(task_id=pk, user=request.user).first()
         if task is None:
             return Response(status=404)
         serializer = TaskViewInDetailSerializer(task)
         return Response(serializer.data)
 
-    def _fork_task(self, task_id):
-        task = self.get_queryset().filter(task_id=task_id).defer('task_id').first()
+    def _fork_task(self, task_id, user):
+        task = self.get_queryset().filter(task_id=task_id, user=user).defer('task_id').first()
         if task is None:
             return Response({'error': f'Task with id:-{task_id} not found'}, status=404)
         # If task exists, create a new task with the same name
@@ -54,11 +55,13 @@ class TaskViewSet(viewsets.ViewSet):
     def create(self, request):
         task_id = request.data.pop('fork_task_id', None)
         if task_id and validate_uuid(task_id):
-            return self._fork_task(task_id)
+            return self._fork_task(task_id, request.user)
 
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
             task = serializer.save()
+            task.user = request.user
+            task.save()
             self._run_task(task, request.data.get('timer', DEFAULT_TASK_RUNTIME))
             return Response({'message': 'Task created successfully'}, status=201)
         return Response(serializer.errors, status=400)
@@ -66,7 +69,7 @@ class TaskViewSet(viewsets.ViewSet):
     def update(self, request, pk=None):
         if not (pk and validate_uuid(pk)):
             return Response({'error': 'Invalid task ID'}, status=400)
-        task = self.get_queryset().filter(task_id=pk).first()
+        task = self.get_queryset().filter(task_id=pk, user=request.user).first()
         if task is None:
             return Response(status=404)
 

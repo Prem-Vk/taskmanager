@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
 import uuid
 
 class Task(models.Model):
@@ -13,6 +14,7 @@ class Task(models.Model):
     name = models.CharField(max_length=200)
     status = models.CharField(max_length=2, choices=TaskStatus.choices, default=TaskStatus.CREATED)
     created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        return f'{self.task_id}-{self.name}-{self.status}'
+        return f'{self.task_id}-{self.name}-{self.status}-{self.user.username if self.user else "No User"}'
