@@ -5,7 +5,7 @@ import requests
 from rich.console import Console
 import shlex
 from rich.rule import Rule
-
+from rich.pretty import pprint
 
 console = Console()
 
@@ -82,6 +82,108 @@ def user_signup(
         typer.echo(f"Network error: {e}")
         raise typer.Exit(1)
 
+
+@app.command()
+def get_task(
+    access_token: Annotated[str, typer.Option("--access-token", "-at", help="JWT access token for authentication.")],
+    task_id: Annotated[str, typer.Option("--task-id","-t",help="Task ID to retrieve.")] = None,
+):
+    """
+    Get task list or task by ID.
+    """
+    try:
+        url = f"{SERVER_URL}api/tasks/"
+        if task_id:
+            url += f"{task_id}/"
+        response = requests.get(url, headers={"Authorization": f"Bearer {access_token}"})
+        if response.status_code == 200:
+            pprint(response.json())
+        else:
+            console.print(f"Error: {response.json().get('error', 'Unknown error')}")
+            raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"Network error: {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def create_task(
+    access_token: Annotated[str, typer.Option("--access-token", "-at", help="JWT access token for authentication.")],
+    name: Annotated[str, typer.Option("--name", "-n", help="Task name.")],
+    status: Annotated[str, typer.Option("--status", "-s", help="Task status.")] = None,
+    timer: Annotated[int, typer.Option("--timer", "-t", help="Task timer duration in seconds.")] = None,
+):
+    """
+    Create a new task with status create or running.
+    """
+    try:
+        data = {name: name, status: status, timer: timer}
+        data = {k: v for k, v in data.items() if v is not None and v != ""}
+        response = requests.post(
+            f"{SERVER_URL}api/tasks/",
+            json=data,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        if response.status_code == 201:
+            console.print(f"[bold green] {response.json()}[/bold green]")
+        else:
+            console.print(f"Error: {response.json().get('error', 'Unknown error')}")
+            raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"Network error: {e}")
+        raise typer.Exit(1)
+
+@app.command()
+def destroy_task(
+    access_token: Annotated[str, typer.Option("--access-token", "-at", help="JWT access token for authentication.")],
+    task_id: Annotated[str, typer.Option("--task-id","-t",help="Task ID to destroy.")] = None,
+):
+    """
+    Destroy a task by ID.
+    """
+    try:
+        response = requests.delete(
+            f"{SERVER_URL}api/tasks/{task_id}/",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        if response.status_code == 204:
+            console.print(f"[bold green]Task {task_id} destroyed successfully.[/bold green]")
+        else:
+            console.print(f"Error: {response.json().get('error', 'Unknown error')}")
+            raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"Network error: {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def update_task(
+    access_token: Annotated[str, typer.Option("--access-token", "-at", help="JWT access token for authentication.")],
+    task_id: Annotated[str, typer.Option("--task-id","-t",help="Task ID to update.")] = None,
+    status: Annotated[str, typer.Option("--status", "-s", help="Task status.")] = None,
+    name: Annotated[str, typer.Option("--name", "-n", help="Task name.")] = None,
+    timer: Annotated[int, typer.Option("--timer", "-t", help="Task timer duration in seconds.")] = None,
+):
+    """
+    Update a task by ID.
+    """
+    try:
+        data = {name: name, status: status, timer: timer}
+        data = {k: v for k, v in data.items() if v is not None and v != ""}
+        response = requests.put(
+            f"{SERVER_URL}api/tasks/{task_id}/",
+            json=data,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        if response.status_code == 200:
+            console.print(f"[bold green]Task {task_id} updated successfully.[/bold green]")
+        else:
+            console.print(f"Error: {response.json().get('error', 'Unknown error')}")
+            raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"Network error: {e}")
+        raise typer.Exit(1)
+
 @app.command()
 def run_api(access_token: Annotated[str, typer.Option("--access-token", "-at", help="JWT access token for authentication.")] = None):
     """
@@ -106,6 +208,8 @@ def run_api(access_token: Annotated[str, typer.Option("--access-token", "-at", h
             try:
                 # Parsing input through shlex to handle quotes
                 command_parts = shlex.split(command_input)
+                if access_token:
+                    command_parts = [*command_parts, "--access-token", access_token]
             except ValueError as e:
                  console.print(f"[bold red]Error parsing command:[/bold red] {e}")
                  continue

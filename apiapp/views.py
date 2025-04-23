@@ -20,7 +20,6 @@ class TaskViewSet(viewsets.ViewSet):
 
     def list(self, request):
         queryset = self.get_queryset().order_by('created_at')
-        print("YAHA TAK AAYA")
         serializer = TaskViewSerializer(queryset, many=True)
         return Response(serializer.data)
 
