@@ -24,6 +24,8 @@ class TaskViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
+        if not (pk and validate_uuid(pk)):
+            return Response({'error': 'Invalid task ID'}, status=400)
         task = self.get_queryset().filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
@@ -61,6 +63,8 @@ class TaskViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=400)
 
     def update(self, request, pk=None):
+        if not (pk and validate_uuid(pk)):
+            return Response({'error': 'Invalid task ID'}, status=400)
         task = self.get_queryset().filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
@@ -69,12 +73,12 @@ class TaskViewSet(viewsets.ViewSet):
             if validate_updation_status(request.data['status']) is False:
                 return Response({'error': 'Invalid status value'}, status=400)
 
-            serializer = TaskSerializer(task, data=request.data, partial=True)
-            if serializer.is_valid():
-                task = serializer.save()
-                self._run_task(task, request.data.get('timer', DEFAULT_TASK_RUNTIME))
-                return Response({'message': 'Task updated successfully'}, status=200)
-            return Response(serializer.errors, status=400)
+        serializer = TaskSerializer(task, data=request.data, partial=True)
+        if serializer.is_valid():
+            task = serializer.save()
+            self._run_task(task, request.data.get('timer', DEFAULT_TASK_RUNTIME))
+            return Response({'message': 'Task updated successfully'}, status=200)
+        return Response(serializer.errors, status=400)
 
     def destroy(self, request, pk=None):
         task = self.get_queryset().filter(task_id=pk).first()

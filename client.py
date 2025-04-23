@@ -111,13 +111,13 @@ def create_task(
     access_token: Annotated[str, typer.Option("--access-token", "-at", help="JWT access token for authentication.")],
     name: Annotated[str, typer.Option("--name", "-n", help="Task name.")],
     status: Annotated[str, typer.Option("--status", "-s", help="Task status.")] = None,
-    timer: Annotated[int, typer.Option("--timer", "-t", help="Task timer duration in seconds.")] = None,
+    timer: Annotated[int, typer.Option("--timer", "-ti", help="Task timer duration in seconds.")] = None,
 ):
     """
     Create a new task with status create or running.
     """
     try:
-        data = {name: name, status: status, timer: timer}
+        data = {'name': name, 'status': status, 'timer': timer}
         data = {k: v for k, v in data.items() if v is not None and v != ""}
         response = requests.post(
             f"{SERVER_URL}api/tasks/",
@@ -159,17 +159,18 @@ def destroy_task(
 @app.command()
 def update_task(
     access_token: Annotated[str, typer.Option("--access-token", "-at", help="JWT access token for authentication.")],
-    task_id: Annotated[str, typer.Option("--task-id","-t",help="Task ID to update.")] = None,
+    task_id: Annotated[str, typer.Option("--task-id","-t",help="Task ID to update.")],
     status: Annotated[str, typer.Option("--status", "-s", help="Task status.")] = None,
     name: Annotated[str, typer.Option("--name", "-n", help="Task name.")] = None,
-    timer: Annotated[int, typer.Option("--timer", "-t", help="Task timer duration in seconds.")] = None,
+    timer: Annotated[int, typer.Option("--timer", "-ti", help="Task timer duration in seconds.")] = None,
 ):
     """
     Update a task by ID.
     """
     try:
-        data = {name: name, status: status, timer: timer}
+        data = {'name': name, 'status': status, 'timer': timer}
         data = {k: v for k, v in data.items() if v is not None and v != ""}
+        print(f"Data to be sent: {data}")
         response = requests.put(
             f"{SERVER_URL}api/tasks/{task_id}/",
             json=data,
