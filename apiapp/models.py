@@ -4,6 +4,7 @@ import uuid
 
 class Task(models.Model):
     class TaskStatus(models.TextChoices):
+        CREATED = 'CR', _('Created')
         STARTED = 'ST', _('Started')
         RUNNING = 'RU', _('Running')
         COMPLETED = 'CO', _('Completed')
@@ -11,7 +12,7 @@ class Task(models.Model):
 
     task_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
-    status = models.CharField(max_length=2, choices=TaskStatus.choices, default=TaskStatus.STARTED)
+    status = models.CharField(max_length=2, choices=TaskStatus.choices, default=TaskStatus.CREATED)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -14,7 +14,26 @@ def get_jwt_token(
         str, typer.Option(prompt=True, confirmation_prompt=True, hide_input=True)
     ],
 ):
-    pass
+    try:
+        response = requests.post(
+            f"{SERVER_URL}api/token/",
+            data={
+                "username": username,
+                "password": password,
+            },
+        )
+        if response.status_code == 200:
+            token = response.json().get("access")
+            if token:
+                typer.echo(f"JWT Token: {token}")
+            else:
+                typer.echo("Failed to retrieve JWT token.")
+        else:
+            typer.echo(f"Error: {response.json().get('error', 'Unknown error')}")
+            raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"Network error: {e}")
+        raise typer.Exit(1)
 
 
 @app.command()

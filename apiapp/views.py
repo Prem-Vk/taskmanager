@@ -93,3 +93,28 @@ def user_signup(request):
     user.save()
 
     return Response({'message': 'User created successfully.'}, status=201)
+
+
+@api_view(['POST'])
+def get_jwt_token(request):
+    """
+    Get JWT token for user.
+    """
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    if not username or not password:
+        return Response({'error': 'Username and password are required.'}, status=400)
+
+    # Authenticate user
+    user = get_user_model().objects.filter(username=username).first()
+    if not user or not user.check_password(password):
+        return Response({'error': 'Invalid credentials.'}, status=401)
+
+    # Generate JWT token
+    from rest_framework_simplejwt.tokens import RefreshToken
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }, status=200)
