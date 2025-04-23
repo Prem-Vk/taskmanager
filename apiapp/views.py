@@ -9,6 +9,7 @@ from apiapp.tasks import run_task
 from apiapp.helpers import validate_updation_status, DEFAULT_TASK_RUNTIME
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 
 
 class TaskViewSet(viewsets.ViewSet):
@@ -88,7 +89,9 @@ class TaskViewSet(viewsets.ViewSet):
         return Response({'message': f'Task {pk} deleted successfully'}, status=204)
 
 
-@api_view(['POST'])
+@api_view(['POST'], )
+@authentication_classes([])
+@permission_classes([])
 def user_signup(request):
     """
     User signup view.
@@ -117,6 +120,8 @@ def user_signup(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def get_jwt_token(request):
     """
     Get JWT token for user.

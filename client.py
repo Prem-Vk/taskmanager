@@ -9,7 +9,7 @@ from rich.pretty import pprint
 
 console = Console()
 
-SERVER_URL = config("SERVER_URL", default="http://127.0.0.1:8080/")
+SERVER_URL = config("SERVER_URL", default="http://0.0.0.0:8000/")
 
 app = typer.Typer(
     name="task-manager-cli",

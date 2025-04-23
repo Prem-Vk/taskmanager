@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=django-insecure-p6gz!-5f+!66w!&(sd%3e3ta!vv9o1pwkpk_37lu_dq@w9p58q
+      - DEBUG=True
+      - DATABASE_URL=postgres://taskmanager:taskmanager@db:5432/taskmanager
+      - DEFAULT_TASK_RUNTIME=5
+    command: >
+      bash -c "python manage.py migrate &&
+               python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - tasknet
+
+  celery:
+    build: .
+    command: celery -A taskmanager worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_TASK_TIME_LIMIT=1*60  # 1 minute
+      - CELERY_TASK_SOFT_TIME_LIMIT=50  # 50 seconds
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    networks:
+      - tasknet
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - tasknet
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: taskmanager
+      POSTGRES_USER: taskmanager
+      POSTGRES_PASSWORD: taskmanager
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tasknet
+
+volumes:
+  postgres_data:
+
+networks:
+  tasknet:
+    driver: bridge

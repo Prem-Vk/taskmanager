@@ -28,3 +28,5 @@ vine==5.1.0
 wcwidth==0.2.13
 wheel==0.45.1
 typer==0.15.2
+requests==2.31.0
+djangorestframework-simplejwt==5.2.2
