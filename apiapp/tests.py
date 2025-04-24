@@ -197,3 +197,52 @@ class TaskModelTestCase(APITestCase):
         response = self.client.delete(reverse('task-detail', args=['invalid-id']))
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['error'], 'Invalid task ID')
+
+    def test_task_unique_name_per_user(self):
+        """
+        Test task unique name constraint & validation per user.
+        """
+        self.user_2 = User.objects.create_user(username='testuser2', password='testpass2')
+        self.client_2 = APIClient()
+        self.access_token_2 = self.client_2.post(
+            reverse('token_obtain_pair'),
+            data={'username': 'testuser2', 'password': 'testpass2'},
+            format='json'
+        )
+        self.client_2.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token_2.data['access']}")
+        response = self.client.post(
+            reverse('task-list'),
+            data={
+                'name': 'Test Task 20',
+                'status': 'cr',
+            },
+        )
+        self.assertEqual(response.status_code, 201)
+        task_1 = Task.objects.get(name='Test Task 20', user=self.user)
+
+        response_2 = self.client_2.post(
+            reverse('task-list'),
+            data={
+                'name': 'Test Task 20',
+                'status': 'cr',
+            },
+        )
+        task_2 = Task.objects.get(name='Test Task 20', user=self.user_2)
+        self.assertEqual(response_2.status_code, 201)
+        self.assertNotEqual(task_1.user, task_2.user)
+
+        response_3 = self.client_2.post(
+            reverse('task-list'),
+            data={
+                'name': 'Test Task 20',
+                'status': 'cr',
+            },
+        )
+
+        self.assertEqual(response_3.status_code, 400)
+        self.assertEqual(response_3.data['name'][0].title(), 'Task With This Name Already Exists.')
+
+        # Check for get-task-list for user_2
+        response_4 = self.client_2.get(reverse('task-list'))
+        self.assertEqual(response_4.status_code, 200)
+        self.assertEqual(len(response_4.data), Task.objects.filter(user=self.user_2).count())

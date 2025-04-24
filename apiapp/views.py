@@ -33,25 +33,27 @@ class TaskViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return Task.objects.all()
+    def get_queryset(self, user):
+        return Task.objects.filter(user=user)
 
     def list(self, request):
+        """
+        List all tasks for the authenticated user."""
         status_filter = request.query_params.get("status", None)
-        queryset = self.get_queryset().filter(user=request.user).order_by("created_at")
-        if status_filter and TASK_STATUS_MAP.get(status_filter) is None:
-            logger.error(f"[list] Invalid status filter: {status_filter}")
-            return Response({"error": "Invalid status value"}, status=400)
-        else:
+        queryset = self.get_queryset(request.user).order_by("created_at")
+        if TASK_STATUS_MAP.get(status_filter):
             queryset = queryset.filter(status=status_filter)
         serializer = TaskViewSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
+        """
+        Retrieve a task by its ID.
+        """
         if not (pk and validate_uuid(pk)):
             logger.error(f"[retrieve] Invalid task ID: {pk}")
             return Response({"error": "Invalid task ID"}, status=400)
-        task = self.get_queryset().filter(task_id=pk, user=request.user).first()
+        task = self.get_queryset(request.user).filter(task_id=pk).first()
         if task is None:
             logger.error(f"[retrieve] Task not found for ID: {pk}")
             return Response(status=404)
@@ -60,8 +62,8 @@ class TaskViewSet(viewsets.ViewSet):
 
     def _fork_task(self, task_id, user):
         task = (
-            self.get_queryset()
-            .filter(task_id=task_id, user=user)
+            self.get_queryset(user)
+            .filter(task_id=task_id)
             .defer("task_id")
             .first()
         )
@@ -76,7 +78,7 @@ class TaskViewSet(viewsets.ViewSet):
         if new_task.is_valid():
             new_task_instance = new_task.save()
             # Return the new task details
-            serializer = TaskSerializer(new_task_instance)
+            serializer = TaskSerializer(new_task_instance, context={"user_id": user.id})
             return Response(serializer.data)
         return Response(new_task.errors, status=400)
 
@@ -91,7 +93,7 @@ class TaskViewSet(viewsets.ViewSet):
         if task_id and validate_uuid(task_id):
             return self._fork_task(task_id, request.user)
 
-        serializer = TaskSerializer(data=request.data)
+        serializer = TaskSerializer(data=request.data, context={"user_id": request.user.id})
         if serializer.is_valid():
             task = serializer.save()
             task.user = request.user
@@ -108,7 +110,7 @@ class TaskViewSet(viewsets.ViewSet):
         if not (pk and validate_uuid(pk)):
             logger.error(f"[update] Invalid task ID: {pk}")
             return Response({"error": "Invalid task ID"}, status=400)
-        task = self.get_queryset().filter(task_id=pk, user=request.user).first()
+        task = self.get_queryset(request.user).filter(task_id=pk).first()
         if task is None:
             logger.error(f"[update] Task not found for ID: {pk}")
             return Response({"error": f"Task with id:-{pk} not found"}, status=404)
@@ -118,7 +120,7 @@ class TaskViewSet(viewsets.ViewSet):
                 logger.error(f'[update] Invalid status value: {request.data["status"]}')
                 return Response({"error": "Invalid status value"}, status=400)
 
-        serializer = TaskUpdateSerializer(task, data=request.data, partial=True)
+        serializer = TaskUpdateSerializer(task, data=request.data, partial=True, context={"user_id": request.user.id})
         if serializer.is_valid():
             task = serializer.save()
             self._run_task(task, request.data.get("timer", DEFAULT_TASK_RUNTIME))
@@ -129,7 +131,7 @@ class TaskViewSet(viewsets.ViewSet):
     def destroy(self, request, pk=None):
         if not (pk and validate_uuid(pk)):
             return Response({"error": "Invalid task ID"}, status=400)
-        task = self.get_queryset().filter(task_id=pk).first()
+        task = self.get_queryset(request.user).filter(task_id=pk).first()
         if task is None:
             return Response(status=404)
         task.delete()

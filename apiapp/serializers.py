@@ -14,9 +14,11 @@ class BaseTaskSerializer(serializers.ModelSerializer):
     def validate_name(self, value):
         if not value:
             raise serializers.ValidationError("Name field cannot be empty.")
+        user_id = self.context.get('user_id')
 
-        if Task.objects.filter(name=value).exists():
-            raise serializers.ValidationError("Task with this name already exists.")
+        if user_id:
+            if Task.objects.filter(name=value, user_id=user_id).exists():
+                raise serializers.ValidationError("Task with this name already exists.")
         return value
 
 

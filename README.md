@@ -103,6 +103,14 @@ CLI tool with a loop until user exits manually to test api without using complex
 4. Copy container id whose name starts with `taskmanager-web`
 5. run `docker exec -it <container-id> /bin/bash`
 
+### Docker Screenshots
+1. Docker running....
+   
+   <img width="824" alt="image" src="https://github.com/user-attachments/assets/619f6b57-7bbb-447a-a79b-035e4ef7f831" />
+
+3. Using CLI...
+   <img width="1440" alt="image" src="https://github.com/user-attachments/assets/6a513d76-444a-42db-a710-702d551ff0d6" />
+
 ---
 # Thank You
 ---

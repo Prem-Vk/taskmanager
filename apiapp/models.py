@@ -16,5 +16,10 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'user'], name='unique_task_name_per_user')
+        ]
+
     def __str__(self):
         return f'{self.task_id}-{self.name}-{self.status}-{self.user.username if self.user else "No User"}'
