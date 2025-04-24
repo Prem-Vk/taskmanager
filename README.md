@@ -92,7 +92,16 @@ CLI tool with a loop until user exits manually to test api without using complex
 1. To create and get task details
     <img width="1440" alt="image" src="https://github.com/user-attachments/assets/ee7885b7-f2ac-4055-b858-c4898caa9724" />
 2. Update and deletion of task:
-    img width="1440" alt="image" src="https://github.com/user-attachments/assets/68a30cb1-1722-456e-a65c-d71ac4f08562" />
+    <img width="1440" alt="image" src="https://github.com/user-attachments/assets/68a30cb1-1722-456e-a65c-d71ac4f08562" />
+
+
+## To run application using docker
+
+1. Clone the repo using command `git clone https://github.com/Prem-Vk/taskmanager.git`
+2. run `docker-compose up`. (you can now access api using curl).
+3. To use cli run command `docker ps`
+4. Copy container id whose name starts with `taskmanager-web`
+5. run `docker exec -it <container-id> /bin/bash`
 
 ---
 # Thank You

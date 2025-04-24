@@ -7,7 +7,6 @@ import logging
 @app.task()
 def run_task(task_id, timer):
     task = Task.objects.get(task_id=task_id)
-    logging.error("Task ID:", task_id, task, task.status)
     if task:
         time.sleep(timer)
         task.status = Task.TaskStatus.COMPLETED
