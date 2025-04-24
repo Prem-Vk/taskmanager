@@ -38,7 +38,12 @@ class TaskViewSet(viewsets.ViewSet):
 
     def list(self, request):
         """
-        List all tasks for the authenticated user."""
+        List all tasks for the authenticated user.
+
+        args:
+            request: The HTTP request object.
+            status: Optional filter for task status.
+        """
         status_filter = request.query_params.get("status", None)
         queryset = self.get_queryset(request.user).order_by("created_at")
         if TASK_STATUS_MAP.get(status_filter):
@@ -49,6 +54,10 @@ class TaskViewSet(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
         """
         Retrieve a task by its ID.
+
+        args:
+            request: The HTTP request object.
+            pk: The task ID to retrieve.
         """
         if not (pk and validate_uuid(pk)):
             logger.error(f"[retrieve] Invalid task ID: {pk}")
@@ -89,6 +98,14 @@ class TaskViewSet(viewsets.ViewSet):
             logger.info(f"[run_task] Task {task.task_id} is already running.")
 
     def create(self, request):
+        """
+        Create a new task.
+
+        args:
+            request: The HTTP request object containing task data.
+            timer: Optional timer duration for the task.
+            status: Optional status of the task.
+        """
         task_id = request.data.get("fork_task_id", None)
         if task_id and validate_uuid(task_id):
             return self._fork_task(task_id, request.user)
@@ -107,6 +124,17 @@ class TaskViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=400)
 
     def update(self, request, pk=None):
+        """
+        Update an existing task.
+
+        args:
+            request: The HTTP request object.
+            pk: The task ID to update.
+
+            status: Optional new status for the task.
+            name: Optional new name for the task.
+            timer: Optional new timer duration for the running task.
+        """
         if not (pk and validate_uuid(pk)):
             logger.error(f"[update] Invalid task ID: {pk}")
             return Response({"error": "Invalid task ID"}, status=400)
@@ -129,6 +157,12 @@ class TaskViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=400)
 
     def destroy(self, request, pk=None):
+        """
+        Delete a task by its ID.
+        args:
+            request: The HTTP request object.
+            pk: The task ID to delete.
+        """
         if not (pk and validate_uuid(pk)):
             return Response({"error": "Invalid task ID"}, status=400)
         task = self.get_queryset(request.user).filter(task_id=pk).first()
